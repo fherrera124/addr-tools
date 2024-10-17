@@ -1,0 +1,5 @@
+/html/*
+!/html/index.html
+/templates/*
+!/templates/default.conf.template
+/logs/*

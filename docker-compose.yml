@@ -1,0 +1,46 @@
+services:
+  certbot:
+    build:
+      context: ./certbot
+      dockerfile: Dockerfile
+    volumes:
+      - ./shared-data/letsencrypt:/etc/letsencrypt
+      - ./shared-data:/data
+    restart: unless-stopped
+  myaddr-tools:
+    build:
+      context: ./myaddr-tools
+      dockerfile: Dockerfile
+    environment:
+      - UPDATE_INTERVAL_DAYS=30
+    volumes:
+      - ./shared-data:/data
+  nginx:
+    image: nginx:1.27.2-alpine-slim
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./shared-data/letsencrypt:/etc/letsencrypt:ro
+      - ./nginx/html:/usr/share/nginx/html:ro
+      - ./nginx/logs:/var/log/nginx
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - nginx_shared_run:/run
+  nginx_reloader:
+    image: nginx:1.27.2-alpine-slim
+    pid: service:nginx
+    volumes:
+      - nginx_shared_run:/run
+    entrypoint:
+      - /bin/sh
+      - -c
+    command:
+      - |
+        while :; do
+          sleep 60
+          echo reloading
+          nginx -s reload
+        done
+volumes:
+  nginx_shared_run:
